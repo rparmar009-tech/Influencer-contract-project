@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PContract MVP — User Flows &amp; Stories</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a212b;
+    --panel-2: #222b37;
+    --ink: #e6edf3;
+    --muted: #9aa7b4;
+    --accent: #4f8cff;
+    --accent-2: #7bd389;
+    --warn: #f0a03a;
+    --danger: #e26a6a;
+    --border: #2a3440;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+    line-height: 1.55; }
+  header {
+    padding: 48px 32px 32px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #182030 0%, #0f1419 100%);
+  }
+  header h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); max-width: 780px; }
+  nav.toc {
+    position: sticky; top: 0; z-index: 5; background: #101720e6; backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border); padding: 12px 32px; overflow-x: auto; white-space: nowrap;
+  }
+  nav.toc a {
+    color: var(--ink); text-decoration: none; margin-right: 18px; padding: 6px 10px;
+    border-radius: 6px; font-size: 14px; border: 1px solid transparent;
+  }
+  nav.toc a:hover { border-color: var(--accent); color: var(--accent); }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px; }
+  section.job {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px 32px; margin-bottom: 32px;
+  }
+  section.job h2 { margin: 0 0 4px; font-size: 24px; }
+  section.job .who { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+  section.job h3 {
+    font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--accent); margin: 28px 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+  }
+  .stories { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .story {
+    background: var(--panel-2); border-left: 3px solid var(--accent);
+    padding: 12px 16px; border-radius: 6px; font-size: 15px;
+  }
+  .story b { color: var(--accent-2); }
+  .story .ac { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
+  .diagram {
+    background: #ffffff; border-radius: 8px; padding: 16px; overflow: auto;
+    border: 1px solid var(--border);
+  }
+  .intro { color: var(--muted); margin-bottom: 18px; font-size: 15px; }
+  .status-legend {
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px;
+  }
+  .chip {
+    padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--muted);
+  }
+  .chip.ok { color: var(--accent-2); border-color: #2d4a36; }
+  .chip.warn { color: var(--warn); border-color: #4a3a1f; }
+  .chip.danger { color: var(--danger); border-color: #4a2626; }
+  footer { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
+  code { background: #0b1018; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PContract MVP — User Flows &amp; Stories</h1>
+  <p>Content-creator escrow platform. Creator drafts a lightweight contract, brand pays upfront into escrow, creator gets brand approval before going live, and payment auto-releases after a 3-day review window (unless disputed). Each job below is framed as <b>Main Job → User Stories → Flow Diagram</b>.</p>
+</header>
+
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#job-1">1. Create &amp; Share Contract</a>
+  <a href="#job-2">2. Review &amp; Pay Escrow</a>
+  <a href="#job-3">3. Pre-Approval &amp; Submit</a>
+  <a href="#job-4">4. Review &amp; Release</a>
+  <a href="#job-5">5. Resolve Dispute</a>
+  <a href="#job-6">6. Edge Cases</a>
+  <a href="#lifecycle">Status Lifecycle</a>
+</nav>
+
+<main>
+
+  <!-- OVERVIEW -->
+  <section class="job" id="overview">
+    <h2>End-to-end journey at a glance</h2>
+    <div class="who">Primary user: Content creator (not legal-savvy, wants fast, frictionless deals, biggest fear = not getting paid). Secondary user: brand contact.</div>
+    <p class="intro">The seven happy-path states below come straight from the doc's "Simplified Flow". Disputes and refunds branch off the Review window.</p>
+
+    <div class="status-legend">
+      <span class="chip">Draft</span>
+      <span class="chip">Awaiting Payment</span>
+      <span class="chip ok">Payment Secured</span>
+      <span class="chip">Awaiting Content Approval</span>
+      <span class="chip">Live &amp; Submitted</span>
+      <span class="chip warn">Under Review (3d)</span>
+      <span class="chip ok">Payment Released</span>
+      <span class="chip danger">Dispute Open</span>
+      <span class="chip danger">Cancelled &amp; Refunded</span>
+    </div>
+
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+  A[Draft] --> B[Awaiting<br/>Payment]
+  B --> C[Payment<br/>Secured]
+  C --> D[Awaiting<br/>Content Approval]
+  D --> E[Live and<br/>Submitted]
+  E --> F{{Brand Review<br/>3 days}}
+  F -- Accept --> G[Payment<br/>Released]
+  F -- Timeout --> G
+  F -- Raise Issue --> H[Dispute<br/>Open]
+  H -- Both confirm --> G
+  H -- No agreement / 10d --> I[Cancelled and<br/>Refunded]
+
+  class A,B,D,E neutral
+  class C,G ok
+  class F warn
+  class H,I danger
+
+  classDef neutral fill:#eef3fb,stroke:#355,stroke-width:1px,color:#111
+  classDef ok fill:#e1f6e6,stroke:#2b7a3a,stroke-width:1px,color:#143a1c
+  classDef warn fill:#fcefd7,stroke:#8a5a12,stroke-width:1px,color:#3a2a07
+  classDef danger fill:#fadcdc,stroke:#8a2c2c,stroke-width:1px,color:#3a0b0b
+      </div>
+    </div>
+  </section>
+
+  <!-- JOB 1 -->
+  <section class="job" id="job-1">
+    <h2>Job 1 — Create &amp; Share a Contract</h2>
+    <div class="who">Actor: <b>Creator</b> · Goal: draft a contract and get a shareable payment link in under 60 seconds.</div>
+
+    <h3>User Stories</h3>
+    <div class="stories">
+      <div class="story"><b>As a creator</b>, I want a single "Create Contract" CTA on the landing page so that I can start without reading onboarding copy.
+        <span class="ac">Acceptance: homepage shows value prop + one primary CTA; no signup wall blocks drafting.</span></div>
+      <div class="story"><b>As a creator</b>, I want a minimal form (brand name, brand email, deliverables, delivery date, price) so that I can draft the contract in under a minute.
+        <span class="ac">Acceptance: five fields only; price validated as currency; delivery date optional.</span></div>
+      <div class="story"><b>As a creator</b>, I want legal terms, escrow logic and payment rules auto-applied so that I never have to write them myself.
+        <span class="ac">Acceptance: no legal input visible in the form; standard T&amp;Cs linked at the bottom of the generated contract.</span></div>
+      <div class="story"><b>As a creator</b>, I want to generate one shareable link after submitting so that I can send it by Copy / Email / WhatsApp.
+        <span class="ac">Acceptance: success screen shows the link plus three share buttons; link resolves for a logged-out brand.</span></div>
+      <div class="story"><b>As a creator</b>, I want the contract to be locked once sent so that the brand always sees the exact terms I shared.
+        <span class="ac">Acceptance: sent contracts are read-only; only option is "Cancel Contract" and create a new one.</span></div>
+      <div class="story"><b>As a creator</b>, I want a "moment of confidence" screen so that I feel the deal is now protected.
+        <span class="ac">Acceptance: success screen uses language like "Your contract is ready" + visible escrow trust signal.</span></div>
+    </div>
+
+    <h3>Flow Diagram</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TD
+  Start([Creator lands on homepage]) --> VP[Sees value prop:<br/>Create a contract.<br/>Get paid upfront. No risk.]
+  VP --> CTA([Click: Create Contract])
+  CTA --> Form[Minimal form:<br/>Brand name and email<br/>Deliverables, Delivery date, Price]
+  Form --> Valid{All required<br/>fields valid?}
+  Valid -- No --> FormErr[Inline error<br/>on missing fields]
+  FormErr --> Form
+  Valid -- Yes --> Gen([Click: Generate Contract<br/>and Payment Link])
+  Gen --> Lock[Contract locked<br/>Status: Draft then Awaiting Payment]
+  Lock --> Success[Success screen:<br/>Your contract is ready]
+  Success --> Share{Share how?}
+  Share --> Copy[Copy link]
+  Share --> Email[Share via email]
+  Share --> WA[Share via WhatsApp]
+  Copy --> Done([Contract sent])
+  Email --> Done
+  WA --> Done
+
+  class Start,CTA,Gen,Copy,Email,WA action
+  class Lock ok
+  class FormErr warn
+  class Done fin
+
+  classDef action fill:#e7f1ff,stroke:#2c4aa8,color:#111
+  classDef ok fill:#e1f6e6,stroke:#2b7a3a,color:#143a1c
+  classDef warn fill:#fcefd7,stroke:#8a5a12,color:#3a2a07
+  classDef fin fill:#eef3fb,stroke:#355,color:#111
+      </div>
+    </div>
+  </section>
+
+  <!-- JOB 2 -->
+  <section class="job" id="job-2">
+    <h2>Job 2 — Brand Reviews &amp; Pays into Escrow</h2>
+    <div class="who">Actor: <b>Brand</b> (external, no signup initially) · Goal: understand the deal in seconds and pay with trust.</div>
+
+    <h3>User Stories</h3>
+    <div class="stories">
+      <div class="story"><b>As a brand</b>, I want to open the contract link without creating an account so that reviewing is frictionless.
+        <span class="ac">Acceptance: link works without login; brand email is prefilled from the contract.</span></div>
+      <div class="story"><b>As a brand</b>, I want a clean, scannable summary (creator, deliverables, price, timeline) so that I can understand the deal in under 30 seconds.
+        <span class="ac">Acceptance: all four data points above the fold; legal T&amp;Cs collapsible.</span></div>
+      <div class="story"><b>As a brand</b>, I want a clear trust signal ("Payment held securely in escrow") so that I know my money is not going directly to the creator's wallet.
+        <span class="ac">Acceptance: escrow badge visible next to the price; short explainer tooltip available.</span></div>
+      <div class="story"><b>As a brand</b>, I want to accept and pay in one flow (card for v2, bank transfer for MVP) so that I don't bounce between screens.
+        <span class="ac">Acceptance: "Accept &amp; Pay" button leads directly to payment; on success, confirmation says "Payment secured. Awaiting delivery."</span></div>
+      <div class="story"><b>As a brand</b>, I want a clear error if payment fails and a way to retry with another method so that I don't lose my place.
+        <span class="ac">Acceptance: failure message "Payment failed. Try another method."; contract stays "Pending Payment" (no activation) until payment succeeds.</span></div>
+      <div class="story"><b>As a creator</b>, I want to see "Awaiting Payment" and be able to resend the link / send a reminder if the brand never opens it.
+        <span class="ac">Acceptance: creator status is "Awaiting Payment"; actions available: Resend link, Copy link again, Send reminder email.</span></div>
+    </div>
+
+    <h3>Flow Diagram</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TD
+  Link([Brand opens link]) --> Summary[Contract summary:<br/>Creator, Deliverables<br/>Price, Timeline<br/>Escrow trust signal]
+  Summary --> Decision{Accept the<br/>contract?}
+  Decision -- No, closes tab --> Wait[Creator sees<br/>Awaiting Payment]
+  Wait --> ReminderQ{Creator sends<br/>reminder?}
+  ReminderQ -- Yes --> Link
+  ReminderQ -- No --> Idle([No activity])
+  Decision -- Yes --> Accept([Click: Accept contract])
+  Accept --> Pay([Pay via bank transfer<br/>card in future])
+  Pay --> PayResult{Payment<br/>succeeded?}
+  PayResult -- No --> FailMsg[Payment failed.<br/>Try another method.<br/>Status stays Pending Payment]
+  FailMsg --> Pay
+  PayResult -- Yes --> Escrow[Funds held in escrow]
+  Escrow --> Notify[Notifications:<br/>Creator: Payment secured<br/>Brand: Awaiting delivery]
+  Notify --> Status[Status: Payment Secured]
+  Status --> EndN([Next: Pre-approval])
+
+  class Link,Accept,Pay action
+  class Escrow,Status ok
+  class Wait warn
+  class FailMsg danger
+  class Idle,EndN fin
+
+  classDef action fill:#e7f1ff,stroke:#2c4aa8,color:#111
+  classDef ok fill:#e1f6e6,stroke:#2b7a3a,color:#143a1c
+  classDef warn fill:#fcefd7,stroke:#8a5a12,color:#3a2a07
+  classDef danger fill:#fadcdc,stroke:#8a2c2c,color:#3a0b0b
+  classDef fin fill:#eef3fb,stroke:#355,color:#111
+      </div>
+    </div>
+  </section>
+
+  <!-- JOB 3 -->
+  <section class="job" id="job-3">
+    <h2>Job 3 — Pre-Approval &amp; Submit Delivery</h2>
+    <div class="who">Actor: <b>Creator</b> · Goal: get the brand's explicit approval <i>before</i> going live, then submit the public link.</div>
+
+    <h3>User Stories</h3>
+    <div class="stories">
+      <div class="story"><b>As a creator</b>, I want a persistent banner telling me to get content approved before posting so that I don't accidentally forfeit payment protection.
+        <span class="ac">Acceptance: banner text: "To guarantee your payment, get the content approved by the brand before posting."; dismissible only temporarily.</span></div>
+      <div class="story"><b>As a creator</b>, I want a 3-step approval checklist (Shared with brand → Approval received → Ready to publish) so that I always know the next step.
+        <span class="ac">Acceptance: checklist visible on the contract page until delivery is submitted.</span></div>
+      <div class="story"><b>As a creator</b>, I want notifications after payment reminding me to share my draft, and before delivery reminding me to get approval.
+        <span class="ac">Acceptance: notification 1 fires on "Payment Secured"; notification 2 fires at T–24h of delivery date.</span></div>
+      <div class="story"><b>As a creator</b>, I want to submit the live public link on the platform so that the 3-day review window starts cleanly.
+        <span class="ac">Acceptance: form accepts a URL; submit CTA = "Submit Delivery".</span></div>
+      <div class="story"><b>As a creator</b>, I must confirm via mandatory checkbox that the brand approved the content before publishing so that the escrow logic is protected.
+        <span class="ac">Acceptance: submission is blocked until the checkbox "I confirm this content was approved by the brand before going live" is ticked.</span></div>
+      <div class="story"><b>As a creator</b>, I want to optionally upload proof (screenshot / message) so that I have evidence if a dispute is raised.
+        <span class="ac">Acceptance: optional file upload field; accepted types = image/*, pdf; max 10 MB.</span></div>
+      <div class="story"><b>As a creator</b>, I want the status to change to "Under Review (3 days)" on submission so that the countdown is visible.
+        <span class="ac">Acceptance: after submit, status flips; a countdown "Auto-release in: Xd Yh" is rendered.</span></div>
+    </div>
+
+    <h3>Flow Diagram</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TD
+  Paid([Status: Payment Secured]) --> Banner[Creator sees persistent banner<br/>plus approval checklist]
+  Banner --> ShareDraft([Creator shares draft<br/>with brand externally])
+  ShareDraft --> ApprovedQ{Brand approved<br/>the content?}
+  ApprovedQ -- No --> WaitApproval[Keep iterating<br/>off-platform]
+  WaitApproval --> ShareDraft
+  ApprovedQ -- Yes --> Publish([Creator publishes<br/>on social media])
+  Publish --> Submit([Click: Submit Work on platform])
+  Submit --> LinkForm[Paste live content URL]
+  LinkForm --> Checkbox{Mandatory checkbox:<br/>I confirm this content was<br/>approved before going live}
+  Checkbox -- Not ticked --> Block[Submit disabled]
+  Block --> Checkbox
+  Checkbox -- Ticked --> OptProof[Optional:<br/>Upload screenshot or message]
+  OptProof --> Submit2([Click: Submit Delivery])
+  Submit2 --> Status[Status: Under Review 3 days<br/>Countdown visible]
+  Status --> EndN([Next: Brand review])
+
+  class Paid ok
+  class ShareDraft,Publish,Submit,Submit2 action
+  class WaitApproval,Status warn
+  class Block danger
+  class EndN fin
+
+  classDef action fill:#e7f1ff,stroke:#2c4aa8,color:#111
+  classDef ok fill:#e1f6e6,stroke:#2b7a3a,color:#143a1c
+  classDef warn fill:#fcefd7,stroke:#8a5a12,color:#3a2a07
+  classDef danger fill:#fadcdc,stroke:#8a2c2c,color:#3a0b0b
+  classDef fin fill:#eef3fb,stroke:#355,color:#111
+      </div>
+    </div>
+  </section>
+
+  <!-- JOB 4 -->
+  <section class="job" id="job-4">
+    <h2>Job 4 — Brand Reviews &amp; Payment Releases</h2>
+    <div class="who">Actors: <b>Brand</b> (active) + <b>Creator</b> (passive) · Goal: during a 3-day window, brand accepts, raises an issue, or does nothing (auto-release).</div>
+
+    <h3>User Stories</h3>
+    <div class="stories">
+      <div class="story"><b>As a brand</b>, I want three clear options in the review window (Accept / Raise Issue / Do nothing) so that I feel fair and controlled.
+        <span class="ac">Acceptance: review screen shows the two buttons; "do nothing" is implicit via the countdown.</span></div>
+      <div class="story"><b>As a brand</b>, I want to accept in one click and release payment instantly so that I can close the loop when everything is fine.
+        <span class="ac">Acceptance: "Accept" triggers release; status flips to "Payment Released"; both sides notified.</span></div>
+      <div class="story"><b>As a brand</b>, I want a highly visible countdown ("Auto-release in: 2d 4h") and a warning notification so that I'm never surprised by auto-release.
+        <span class="ac">Acceptance: countdown visible top of contract page; notification at T–48h and T–12h; copy: "Payment will be released soon unless you take action."</span></div>
+      <div class="story"><b>As a creator</b>, I want a "Payment scheduled for release" notification so that I know the funds are coming.
+        <span class="ac">Acceptance: notification at T–48h; status copy: "Payment scheduled for release".</span></div>
+      <div class="story"><b>As a creator</b>, I want a celebratory confirmation when payment is released so that the emotional payoff matches the effort.
+        <span class="ac">Acceptance: UI shows "Payment released 🎉"; funds move to creator account.</span></div>
+      <div class="story"><b>As a brand</b>, if the creator never delivers by the contract deadline, I want a "Raise Issue" prompt so that I can reclaim my money.
+        <span class="ac">Acceptance: if delivery deadline passes without submission, the brand sees a "Report no delivery" CTA; confirmed no-delivery = full refund.</span></div>
+    </div>
+
+    <h3>Flow Diagram</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TD
+  Submitted([Status: Under Review 3 days]) --> Visible[Brand sees:<br/>Live link, Countdown, 2 actions]
+  Visible --> Choice{Brand action<br/>within 3 days?}
+  Choice -- Accept --> Accept([Click: Accept])
+  Accept --> Release[Payment released instantly]
+  Choice -- Do nothing --> Timer[Countdown ticks down]
+  Timer --> Expired{3 days<br/>expired?}
+  Expired -- No --> Timer
+  Expired -- Yes --> Release
+  Choice -- Raise Issue --> Dispute([Go to Dispute flow Job 5])
+  Release --> Notify[Both users notified:<br/>Creator: Payment released<br/>Brand: Receipt sent]
+  Notify --> Status[Status: Payment Released]
+  Status --> EndN([Contract complete])
+
+  class Submitted warn
+  class Accept action
+  class Release,Status ok
+  class Dispute danger
+  class EndN fin
+
+  classDef action fill:#e7f1ff,stroke:#2c4aa8,color:#111
+  classDef ok fill:#e1f6e6,stroke:#2b7a3a,color:#143a1c
+  classDef warn fill:#fcefd7,stroke:#8a5a12,color:#3a2a07
+  classDef danger fill:#fadcdc,stroke:#8a2c2c,color:#3a0b0b
+  classDef fin fill:#eef3fb,stroke:#355,color:#111
+      </div>
+    </div>
+  </section>
+
+  <!-- JOB 5 -->
+  <section class="job" id="job-5">
+    <h2>Job 5 — Resolve a Dispute</h2>
+    <div class="who">Actors: <b>Brand</b> &amp; <b>Creator</b> · Core rule: <i>the platform does NOT resolve creative disputes.</i> Parties resolve externally and then both must confirm the outcome on-platform.</div>
+
+    <h3>User Stories</h3>
+    <div class="stories">
+      <div class="story"><b>As a brand</b>, I want to open a dispute by selecting a reason (Not as agreed / Late delivery / Other) + an optional comment so that the creator knows why.
+        <span class="ac">Acceptance: "Raise Issue" form requires a dropdown reason; optional free-text comment; payment immediately frozen on submit.</span></div>
+      <div class="story"><b>As a creator</b>, I want an instant notification when an issue is raised so that I can follow up off-platform fast.
+        <span class="ac">Acceptance: in-app + email notification: "⚠️ Brand has raised an issue"; funds show as frozen in status.</span></div>
+      <div class="story"><b>As a creator or brand</b>, I want a clear on-screen explanation that we resolve externally and then confirm here so that I don't expect platform arbitration.
+        <span class="ac">Acceptance: dispute screen copy: "Please resolve this directly with the other party and confirm the outcome here."</span></div>
+      <div class="story"><b>As a creator</b>, I want a "Confirm Agreement" button to release payment so that once we agree off-platform, one click finishes it.
+        <span class="ac">Acceptance: payment only releases when BOTH parties have clicked their respective confirm buttons.</span></div>
+      <div class="story"><b>As a brand</b>, I want a "No Agreement" button that cancels the contract and refunds me so that I have a clean exit if we can't agree.
+        <span class="ac">Acceptance: warning copy: "If no agreement is reached, the contract will be cancelled and the payment returned to the brand."; on confirm = refund.</span></div>
+      <div class="story"><b>As both parties</b>, I want a progress indicator showing who has confirmed so that expectations are explicit.
+        <span class="ac">Acceptance: UI shows "Creator: ✅ Confirmed / Brand: ⏳ Pending" (or equivalent).</span></div>
+      <div class="story"><b>As the system</b>, after 10 days of deadlock with no bilateral agreement, I want to prompt cancellation, and default to refund-to-brand if still no action.
+        <span class="ac">Acceptance: 10-day timer; prompt "No agreement reached. Do you want to cancel?"; on timeout → contract cancelled, payment refunded.</span></div>
+    </div>
+
+    <h3>Flow Diagram</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TD
+  Raise([Brand clicks: Raise Issue]) --> Reason[Select reason:<br/>Not as agreed, Late delivery, Other<br/>plus optional comment]
+  Reason --> Freeze[Payment FROZEN<br/>Status: Dispute Open]
+  Freeze --> NotifyBoth[Both users notified<br/>Screen copy:<br/>Resolve externally and<br/>confirm the outcome here.]
+  NotifyBoth --> External([Parties talk off-platform<br/>WhatsApp, Email, Call])
+  External --> Outcome{Did they<br/>reach agreement?}
+
+  Outcome -- Yes, pay creator --> BothConfirm[Both click<br/>Confirm Agreement]
+  BothConfirm --> BothCheck{Both sides<br/>confirmed?}
+  BothCheck -- Only one --> WaitOther[Progress indicator:<br/>Waiting for the other party]
+  WaitOther --> BothCheck
+  BothCheck -- Both --> Release[Payment released<br/>to creator]
+  Release --> StatusR[Status: Payment Released]
+
+  Outcome -- No or refuse --> NoAgreement[Either clicks<br/>Mark as No Agreement]
+  NoAgreement --> Confirm[Confirmation message:<br/>Contract will be cancelled,<br/>payment returned to brand.]
+  Confirm --> Refund[Status: Cancelled and Refunded]
+
+  Outcome -- Deadlock, no action --> Timer10[10 days elapsed]
+  Timer10 --> Prompt[System prompts:<br/>No agreement reached.<br/>Do you want to cancel?]
+  Prompt --> StillNo{Any action?}
+  StillNo -- No --> Refund
+  StillNo -- Yes, confirm --> BothConfirm
+  StillNo -- Yes, cancel --> Refund
+
+  class Raise,Freeze,Refund danger
+  class External action
+  class WaitOther warn
+  class Release,StatusR ok
+
+  classDef action fill:#e7f1ff,stroke:#2c4aa8,color:#111
+  classDef ok fill:#e1f6e6,stroke:#2b7a3a,color:#143a1c
+  classDef warn fill:#fcefd7,stroke:#8a5a12,color:#3a2a07
+  classDef danger fill:#fadcdc,stroke:#8a2c2c,color:#3a0b0b
+      </div>
+    </div>
+  </section>
+
+  <!-- JOB 6 -->
+  <section class="job" id="job-6">
+    <h2>Job 6 — Handle Edge Cases</h2>
+    <div class="who">Actors: <b>Both</b> · Goal: money is always safe, status is always clear, next action is always obvious — even when things go wrong.</div>
+
+    <h3>User Stories</h3>
+    <div class="stories">
+      <div class="story"><b>As a brand</b>, when my payment fails, I want a clear retry path so that I don't lose momentum (MVP = bank transfer only).
+        <span class="ac">Acceptance: error "Payment failed. Try another method."; contract stays "Pending Payment" until success.</span></div>
+      <div class="story"><b>As a creator</b>, when the brand never opens my link, I want to resend / copy the link / send a reminder email so that I can nudge without friction.
+        <span class="ac">Acceptance: three actions visible on the contract page while status = "Awaiting Payment".</span></div>
+      <div class="story"><b>As a creator</b>, when I realise I entered wrong details (e.g. wrong price), I want to cancel and create a new contract — not edit a sent one — so that trust is preserved.
+        <span class="ac">Acceptance: sent contracts are locked; only available write-action is "Cancel Contract"; cancelled contracts cannot be reactivated.</span></div>
+      <div class="story"><b>As a brand</b>, when the creator misses the delivery deadline, I want a "Raise Issue" prompt that leads to a full refund on confirmed no-delivery.
+        <span class="ac">Acceptance: after deadline + grace period, brand CTA = "Report no delivery"; on creator silence or confirmation, payment fully refunded.</span></div>
+      <div class="story"><b>As either party</b>, when I suspect fraud or abuse, I want a "Report issue" entry point so that the platform can flag the contract internally.
+        <span class="ac">Acceptance: reporting is one click from the contract page; submission freezes payment for review; no complex investigation UI in MVP.</span></div>
+      <div class="story"><b>As a user</b>, at any moment I want to know where the money is, the current status, and the next action so that I'm never lost.
+        <span class="ac">Acceptance: every contract page shows: money location (Escrow / With brand / Released / Refunded), status chip, and a primary CTA.</span></div>
+    </div>
+
+    <h3>Flow Diagram</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TD
+  Root([Edge case triggered]) --> Which{Which case?}
+
+  Which -- Payment fails --> PF[Error: Payment failed.<br/>Try another method.<br/>Status: Pending Payment]
+  PF --> PFRetry([Brand retries])
+  PFRetry --> PFDone([Back to Job 2])
+
+  Which -- Brand never opens --> NO[Status: Awaiting Payment]
+  NO --> NOAct{Creator action?}
+  NOAct -- Resend link --> NODone([Link resent])
+  NOAct -- Copy link --> NODone
+  NOAct -- Reminder email --> NODone
+  NOAct -- Do nothing --> NOIdle([Idle])
+
+  Which -- Creator made mistake --> CM[Sent contract is locked]
+  CM --> CMCancel([Creator clicks: Cancel Contract])
+  CMCancel --> CMStatus[Status: Cancelled]
+  CMStatus --> CMNew[Create new contract]
+  CMNew --> CMDone([Back to Job 1])
+
+  Which -- Creator never delivers --> ND{Delivery deadline<br/>passed?}
+  ND -- No --> NDWait[Keep waiting]
+  ND -- Yes --> NDPrompt[Brand sees<br/>Raise Issue prompt]
+  NDPrompt --> NDConfirm{Confirmed<br/>no delivery?}
+  NDConfirm -- Yes --> NDRefund[Full refund to brand]
+  NDConfirm -- No --> NDGo([Normal flow resumes])
+
+  Which -- Fraud or abuse --> FR[User clicks: Report issue]
+  FR --> FRFlag[Contract flagged internally<br/>Payment frozen if needed]
+  FRFlag --> FRDone([Ops review offline])
+
+  class Root,PFRetry,CMCancel,CMNew,FR action
+  class NO,NDWait warn
+  class PF,CMStatus,NDRefund,FRFlag danger
+  class PFDone,NODone,NOIdle,CMDone,NDGo,FRDone fin
+
+  classDef action fill:#e7f1ff,stroke:#2c4aa8,color:#111
+  classDef ok fill:#e1f6e6,stroke:#2b7a3a,color:#143a1c
+  classDef warn fill:#fcefd7,stroke:#8a5a12,color:#3a2a07
+  classDef danger fill:#fadcdc,stroke:#8a2c2c,color:#3a0b0b
+  classDef fin fill:#eef3fb,stroke:#355,color:#111
+      </div>
+    </div>
+  </section>
+
+  <!-- LIFECYCLE -->
+  <section class="job" id="lifecycle">
+    <h2>Appendix — Full Status Lifecycle</h2>
+    <div class="who">Consolidated state diagram the designer can use to drive the status badge / progress bar.</div>
+
+    <div class="diagram">
+      <div class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> Draft
+  Draft --> AwaitingPayment : Send link
+  AwaitingPayment --> PaymentSecured : Brand pays
+  AwaitingPayment --> Cancelled : Creator cancels
+  AwaitingPayment --> PendingPayment : Payment fails
+  PendingPayment --> PaymentSecured : Retry succeeds
+  PendingPayment --> Cancelled : Creator cancels
+  PaymentSecured --> AwaitingApproval : Auto
+  AwaitingApproval --> LiveSubmitted : Creator submits delivery link
+  LiveSubmitted --> UnderReview : Auto (3-day timer starts)
+  UnderReview --> PaymentReleased : Brand accepts OR 3-day timeout
+  UnderReview --> DisputeOpen : Brand raises issue
+  DisputeOpen --> PaymentReleased : Both confirm agreement
+  DisputeOpen --> CancelledRefunded : No agreement OR 10-day timeout
+  PaymentSecured --> CancelledRefunded : Creator no-delivery confirmed
+  PaymentReleased --> [*]
+  Cancelled --> [*]
+  CancelledRefunded --> [*]
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Built from the MVP User Journey doc. Open this file in Chrome (or any modern browser) — diagrams render automatically via Mermaid.js.
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    securityLevel: 'loose',
+    flowchart: { htmlLabels: true, curve: 'basis', useMaxWidth: true },
+    themeVariables: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      primaryColor: '#e7f1ff',
+      primaryTextColor: '#111',
+      primaryBorderColor: '#2c4aa8',
+      lineColor: '#39485a'
+    }
+  });
+</script>
+
+</body>
+</html>
